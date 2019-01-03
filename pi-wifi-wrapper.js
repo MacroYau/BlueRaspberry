@@ -23,6 +23,7 @@
 const wirelessTools = require("wireless-tools");
 const shell = require("child_process");
 const async = require("async");
+const crypto = require("crypto");
 
 function status(interface, callback) {
     wirelessTools.wpa.status(interface, callback);
@@ -76,7 +77,8 @@ function connect(interface, params, callback) {
     wirelessTools.wpa.add_network(interface, (err, data) => {
         if (!err && data.hasOwnProperty("result")) {
             const id = data.result;
-            const formattedParams = formattedNetworkDetails(params);
+            let formattedParams = hashNetworkDetailsPassword(params);
+            formattedParams = formattedNetworkDetails(formattedParams);
             async.forEachOf(formattedParams, (value, key, callback) => {
                 wirelessTools.wpa.set_network(interface, id, key, value, callback);
             }, err => {
@@ -138,15 +140,31 @@ function disableInterface(interface, callback) {
     });
 }
 
+function hashNetworkDetailsPassword(params) {
+    if (params.hasOwnProperty("psk")) {
+        const hash = crypto.pbkdf2Sync(params["psk"], params["ssid"], 4096, 32, "sha1").toString("hex");
+        params["psk"] = hash;
+        params["hashed"] = true;
+    } else if (params.hasOwnProperty("password")) {
+        const hash = crypto.createHash("md4").update(params["password"], "utf16le").digest("hex");
+        params["password"] = `hash:${hash}`;
+        params["hashed"] = true;
+    }
+
+    return params;
+}
+
 function formattedNetworkDetails(params) {
-    const keysNeedEscaping = [
+    let keysNeedEscaping = [
         "ssid",
-        "psk",
         "identity",
-        "password",
         "phase1",
         "phase2"
     ];
+
+    if (!params["hashed"]) {
+        keysNeedEscaping.push(["psk", "password"]);
+    }
 
     for (var i in keysNeedEscaping) {
         const key = keysNeedEscaping[i];
@@ -155,7 +173,7 @@ function formattedNetworkDetails(params) {
         }
     }
 
-    return params
+    return params;
 }
 
 function isWirelessToolsResultValid(err, data) {
