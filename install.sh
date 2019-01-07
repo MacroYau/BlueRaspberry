@@ -158,14 +158,18 @@ EOF
     echo "Done"
 }
 
-echo "Blue Raspberry is an experimental application. Use at your own risk."
-if check_model; then
-    if confirm "Do you want to continue?"; then
-        do_install
-    fi
+if [[ $1 = "-f" ]]; then
+    do_install
 else
-    if confirm "The application has only been tested on Raspberry Pi 3 Model B, and may not support the current device. Proceed?"; then
-        do_install
+    echo "Blue Raspberry is an experimental application. Use at your own risk."
+    if check_model; then
+        if confirm "Do you want to continue?"; then
+            do_install
+        fi
+    else
+        if confirm "The application has only been tested on Raspberry Pi 3 Model B, and may not support the current device. Proceed?"; then
+            do_install
+        fi
     fi
 fi
 
