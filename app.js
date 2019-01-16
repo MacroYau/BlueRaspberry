@@ -25,18 +25,24 @@ const bleno = require("bleno");
 const connectivityService = require("./connectivity-service");
 const wifiConfigService = require("./wifi-config-service");
 
+const TIMEOUT_SECONDS = 10; // Forces systemd to restart the service after failure
 const BLUE_RASPBERRY_SERVICE_UUID = "D3BEC8C1-2B35-40E2-B92B-F9B429F4D3E5";
+
+const timeoutExit = setTimeout(() => {
+	process.exit();
+}, TIMEOUT_SECONDS * 1000);
 
 bleno.on("stateChange", state => {
 	if (state === "poweredOn") {
+		clearTimeout(timeoutExit);
 		bleno.startAdvertising("Blue Raspberry", [BLUE_RASPBERRY_SERVICE_UUID]);
 	} else {
 		bleno.stopAdvertising();
 	}
-})
+});
 
 bleno.on("advertisingStart", err => {
 	if (!err) {
 		bleno.setServices([connectivityService, wifiConfigService]);
 	}
-})
+});

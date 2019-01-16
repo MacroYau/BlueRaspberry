@@ -142,6 +142,7 @@ setup_service() {
 [Unit]
 Description=Blue Raspberry headless pairing service
 After=network.target bluetooth.service
+PartOf=bluetooth.service
 
 [Service]
 WorkingDirectory=$INSTALL_PATH
