@@ -28,8 +28,66 @@ const NOTIFY_TIMER_INTERVAL = 1000;
 
 const CONNECTIVITY_SERVICE_UUID = "8F7E321D-DF0A-4096-BB5B-34C267671B06";
 
+const WIFI_STATE_UUID = "6BDF050D-C2B4-4D80-AD29-614617553ECD";
 const IP_ADDRESS_UUID = "132D7244-46C0-481B-B947-42F329F6BE55";
 const SSID_UUID = "EF92DD60-B49C-4874-B93F-018E80FCF818";
+
+class WiFiStateCharacteristic extends bleno.Characteristic {
+
+	constructor() {
+		super({
+			uuid: WIFI_STATE_UUID,
+			properties: ["read", "notify"],
+			descriptors: [
+				new bleno.Descriptor({
+					uuid: "2901",
+					value: "W-Fi Adapter State"
+				})
+			]
+		});
+
+		this.state = false;
+		this.timer = null;
+	}
+
+	getState(callback) {
+		piWifi.interfaceStatus(WLAN_INTERFACE, (err, status) => {
+			if (err) {
+				return callback(false);
+			} else {
+				return callback(!!status.up);
+			}
+		});
+	}
+
+	onReadRequest(offset, callback) {
+		this.getState(state => {
+			this.state = !!state;
+			const data = Buffer.from(state ? [0x01] : [0x00]);
+			return callback(this.RESULT_SUCCESS, data);
+		});
+	}
+
+	onSubscribe(maxValueSize, updateValueCallback) {
+		this.timer = setInterval(() => {
+			this.getState(state => {
+				if (state == this.state) {
+					return;
+				} else {
+					this.state = !!state;
+					const data = Buffer.from(state ? [0x01] : [0x00]);
+					updateValueCallback(data);
+				}
+			});
+		}, NOTIFY_TIMER_INTERVAL);
+	}
+
+	onUnsubscribe() {
+		clearInterval(this.timer);
+		this.timer = null;
+	}
+
+}
 
 class IPAddressCharacteristic extends bleno.Characteristic {
 
@@ -148,6 +206,7 @@ class SSIDCharacteristic extends bleno.Characteristic {
 const connectivityService = new bleno.PrimaryService({
 	uuid: CONNECTIVITY_SERVICE_UUID,
 	characteristics: [
+		new WiFiStateCharacteristic(),
 		new IPAddressCharacteristic(),
 		new SSIDCharacteristic()
 	]

@@ -25,6 +25,10 @@ const shell = require("child_process");
 const async = require("async");
 const crypto = require("crypto");
 
+function interfaceStatus(interface, callback) {
+    wirelessTools.ifconfig.status(interface, callback);
+}
+
 function status(interface, callback) {
     wirelessTools.wpa.status(interface, callback);
 }
@@ -181,6 +185,7 @@ function isWirelessToolsResultValid(err, data) {
 }
 
 module.exports = {
+    interfaceStatus: interfaceStatus,
     status: status,
     scan: scan,
     listSavedNetworks: listSavedNetworks,
