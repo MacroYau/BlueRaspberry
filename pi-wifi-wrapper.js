@@ -131,7 +131,8 @@ function removeSavedNetwork(interface, ssid, callback) {
 }
 
 function enableInterface(interface, callback) {
-    wirelessTools.ifconfig.up(interface, err => {
+    const command = `sudo ifconfig ${interface} up`;
+    shell.exec(command, err => {
         callback(err);
     });
 }
