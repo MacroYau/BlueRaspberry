@@ -83,6 +83,7 @@ function connect(interface, params, callback) {
             const id = data.result;
             let formattedParams = hashNetworkDetailsPassword(params);
             formattedParams = formattedNetworkDetails(formattedParams);
+            delete formattedParams["hashed"];
             async.forEachOf(formattedParams, (value, key, callback) => {
                 wirelessTools.wpa.set_network(interface, id, key, value, callback);
             }, err => {
